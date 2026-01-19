@@ -280,7 +280,7 @@
         "PTY cleaned up on disconnect"
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -293,7 +293,7 @@
         "terminal:output streams PTY stdout to client"
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
