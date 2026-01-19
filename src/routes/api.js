@@ -92,4 +92,59 @@ export async function registerApiRoutes(fastify) {
 
     return { project };
   });
+
+  // NWHA-014: Update project
+  fastify.put('/api/projects/:slug', async (request, reply) => {
+    const { slug } = request.params;
+    const { name, status } = request.body || {};
+    const db = getDb();
+
+    const project = db.prepare('SELECT * FROM projects WHERE slug = ? AND user_id = ?')
+      .get(slug, request.user.id);
+
+    if (!project) {
+      return reply.status(404).send({ error: 'Project not found' });
+    }
+
+    const updates = [];
+    const values = [];
+
+    if (name) {
+      updates.push('name = ?');
+      values.push(name);
+    }
+    if (status) {
+      updates.push('status = ?');
+      values.push(status);
+    }
+
+    if (updates.length > 0) {
+      updates.push('updated_at = CURRENT_TIMESTAMP');
+      values.push(project.id);
+      db.prepare(`UPDATE projects SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+    }
+
+    const updated = db.prepare('SELECT * FROM projects WHERE id = ?').get(project.id);
+    return { project: updated };
+  });
+
+  // NWHA-014: Delete project (soft delete - set status to 'deleted')
+  fastify.delete('/api/projects/:slug', async (request, reply) => {
+    const { slug } = request.params;
+    const db = getDb();
+
+    const project = db.prepare('SELECT * FROM projects WHERE slug = ? AND user_id = ?')
+      .get(slug, request.user.id);
+
+    if (!project) {
+      return reply.status(404).send({ error: 'Project not found' });
+    }
+
+    db.prepare(`
+      UPDATE projects SET status = 'deleted', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(project.id);
+
+    return { deleted: true };
+  });
 }

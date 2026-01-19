@@ -187,7 +187,7 @@
         "Returns 404 if not found or not owned"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
