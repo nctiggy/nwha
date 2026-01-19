@@ -107,7 +107,7 @@
         "Redirect includes correct client_id and callback_url"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -121,7 +121,7 @@
         "Redirects to / on success"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -134,7 +134,7 @@
         "GET /auth/logout destroys session and redirects to /"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

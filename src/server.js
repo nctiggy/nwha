@@ -6,6 +6,7 @@ import fastifySession from '@fastify/session';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { SQLiteStore } from './session-store.js';
+import { registerAuthRoutes } from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -79,6 +80,9 @@ export async function createServer() {
       return { user: MOCK_USER };
     });
   }
+
+  // Register auth routes (NWHA-008, NWHA-009, NWHA-010)
+  await registerAuthRoutes(fastify);
 
   return fastify;
 }
