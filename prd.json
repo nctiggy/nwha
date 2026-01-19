@@ -67,7 +67,7 @@
         "FTS virtual table for knowledge search"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
