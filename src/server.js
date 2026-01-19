@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { SQLiteStore } from './session-store.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerApiRoutes } from './routes/api.js';
+import { getDb, initSchema } from './db/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -75,14 +77,28 @@ export async function createServer() {
   // Auth bypass for testing (NWHA-007)
   if (AUTH_BYPASS) {
     fastify.post('/auth/dev-login', async (request, reply) => {
-      // Set user in session
-      request.session.set('user', MOCK_USER);
-      return { user: MOCK_USER };
+      // Ensure mock user exists in database
+      initSchema();
+      const db = getDb();
+      let user = db.prepare('SELECT * FROM users WHERE github_id = ?').get(MOCK_USER.github_id);
+      if (!user) {
+        const result = db.prepare(`
+          INSERT INTO users (github_id, username, email, role)
+          VALUES (?, ?, ?, ?)
+        `).run(MOCK_USER.github_id, MOCK_USER.username, MOCK_USER.email, MOCK_USER.role);
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+      }
+      // Use actual database user (with correct id)
+      request.session.set('user', user);
+      return { user };
     });
   }
 
   // Register auth routes (NWHA-008, NWHA-009, NWHA-010)
   await registerAuthRoutes(fastify);
+
+  // Register API routes (NWHA-011, NWHA-012, NWHA-013)
+  await registerApiRoutes(fastify);
 
   return fastify;
 }
