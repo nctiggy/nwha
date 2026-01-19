@@ -189,4 +189,40 @@ describe('Ralph Session API (NWHA-023, NWHA-024, NWHA-025)', () => {
       expect(body.session.status).toBe('stopped');
     });
   });
+
+  describe('Ralph Iteration Limit (NWHA-025)', () => {
+    it('should track iteration count in session', async () => {
+      // Create a new session
+      const createRes = await server.inject({
+        method: 'POST',
+        url: `/api/projects/${projectSlug}/sessions`,
+        headers: {
+          cookie: sessionCookie,
+          'content-type': 'application/json'
+        },
+        payload: JSON.stringify({})
+      });
+
+      expect(createRes.statusCode).toBe(201);
+      const body = JSON.parse(createRes.body);
+      expect(body.session.iterations).toBe(0);
+      expect(body.session.max_iterations).toBe(20);
+    });
+
+    it('should use RALPH_MAX_ITERATIONS from environment', async () => {
+      // The env var is set to 20 in beforeAll
+      const createRes = await server.inject({
+        method: 'POST',
+        url: `/api/projects/${projectSlug}/sessions`,
+        headers: {
+          cookie: sessionCookie,
+          'content-type': 'application/json'
+        },
+        payload: JSON.stringify({})
+      });
+
+      const body = JSON.parse(createRes.body);
+      expect(body.session.max_iterations).toBe(20);
+    });
+  });
 });

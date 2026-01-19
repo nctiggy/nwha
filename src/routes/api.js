@@ -243,9 +243,11 @@ export async function registerApiRoutes(fastify) {
   });
 
   // NWHA-023: Start Ralph session
+  // NWHA-025: Ralph iteration limit
   fastify.post('/api/projects/:slug/sessions', async (request, reply) => {
     const { slug } = request.params;
     const db = getDb();
+    const maxIterations = parseInt(process.env.RALPH_MAX_ITERATIONS, 10) || 20;
 
     // Verify project exists and belongs to user
     const project = db.prepare('SELECT * FROM projects WHERE slug = ? AND user_id = ?')
@@ -255,11 +257,11 @@ export async function registerApiRoutes(fastify) {
       return reply.status(404).send({ error: 'Project not found' });
     }
 
-    // Create session record in database
+    // Create session record in database with max_iterations
     const result = db.prepare(`
-      INSERT INTO sessions (project_id, engine, status, iterations)
-      VALUES (?, ?, ?, ?)
-    `).run(project.id, 'claude', 'running', 0);
+      INSERT INTO sessions (project_id, engine, status, iterations, max_iterations, started_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(project.id, 'claude', 'running', 0, maxIterations);
 
     const sessionId = result.lastInsertRowid;
 

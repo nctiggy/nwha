@@ -335,7 +335,7 @@
         "Notifies via socket event"
       ],
       "priority": 25,
-      "passes": false,
+      "passes": true,
       "notes": "Default 20 iterations"
     },
     {
@@ -348,7 +348,7 @@
         "CSS and JS files accessible"
       ],
       "priority": 26,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

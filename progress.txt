@@ -152,3 +152,49 @@ Session Started: 2025-01-18
 ### Next Story: NWHA-017 (AI response via Claude CLI)
 
 ================================================================================
+
+## Session: 2026-01-18 (continued) - NWHA-017 through NWHA-024 Complete
+
+### Completed Stories
+- NWHA-017: AI response via Claude CLI ✓
+  - Created src/services/cli.js with runClaude, runCodex, getAIResponse
+  - POST /api/projects/:slug/chat with ai:true triggers Claude
+  - Response stored as assistant message
+
+- NWHA-018: Codex CLI fallback ✓
+  - getAIResponse falls back to Codex when Claude fails
+  - CLI_FALLBACK_ENABLED=false disables fallback
+
+- NWHA-019: Socket.io server setup ✓
+  - Socket.io attached to Fastify via onReady hook
+  - Shares same port as HTTP server
+  - CORS configured
+
+- NWHA-020: Socket authentication ✓
+  - Middleware checks session cookie
+  - Unauthenticated sockets disconnected
+  - User data attached to socket
+
+- NWHA-021: PTY process spawn ✓
+  - Created src/services/pty.js with PTYManager class
+  - node-pty spawns bash shell
+  - PTY associated with session ID
+
+- NWHA-022: Terminal socket events ✓
+  - PTYManager supports write, resize, event listeners
+
+- NWHA-023: Start Ralph session ✓
+  - POST /api/projects/:slug/sessions creates session
+  - Spawns PTY, session tracked with status: running
+
+- NWHA-024: Ralph session control ✓
+  - POST /api/sessions/:id/pause updates status
+  - POST /api/sessions/:id/resume updates status
+  - POST /api/sessions/:id/stop destroys PTY
+
+### Test Count: 80 passing tests
+### Docker: Build and health check verified
+
+### Next Story: NWHA-025 (Ralph iteration limit)
+
+================================================================================
