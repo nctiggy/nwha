@@ -227,7 +227,7 @@
         "Returns both user message and AI response"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "Uses CLI subscription, NOT API"
     },
     {

@@ -132,3 +132,23 @@ Session Started: 2025-01-18
 ### Docker: Build and health check verified
 
 ================================================================================
+
+## Session: 2026-01-18 (continued) - NWHA-015 & NWHA-016 Complete
+
+### Completed Stories
+- NWHA-015: Store conversation messages ✓
+  - POST /api/projects/:slug/chat stores user/assistant messages
+  - Validates role (user/assistant) and content required
+  - Associates message with project via project_id
+
+- NWHA-016: Retrieve conversation history ✓
+  - GET /api/projects/:slug/chat returns messages
+  - Ordered by created_at ASC (chronological)
+  - Only returns messages for owned projects (auth middleware)
+
+### Test Count: 49 passing tests
+### Docker: Build and health check verified
+
+### Next Story: NWHA-017 (AI response via Claude CLI)
+
+================================================================================

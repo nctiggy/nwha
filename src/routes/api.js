@@ -1,5 +1,6 @@
 // API routes for NWHA
 import { getDb, initSchema } from '../db/index.js';
+import { getAIResponse } from '../services/cli.js';
 
 /**
  * Auth middleware - ensures user is authenticated
@@ -149,9 +150,10 @@ export async function registerApiRoutes(fastify) {
   });
 
   // NWHA-015: Store conversation message
+  // NWHA-017: AI response via Claude CLI
   fastify.post('/api/projects/:slug/chat', async (request, reply) => {
     const { slug } = request.params;
-    const { role, content } = request.body || {};
+    const { role, content, ai } = request.body || {};
     const db = getDb();
 
     // Verify project exists and belongs to user
@@ -172,16 +174,45 @@ export async function registerApiRoutes(fastify) {
       return reply.status(400).send({ error: 'Role must be user or assistant' });
     }
 
-    // Insert message into conversations table
-    const result = db.prepare(`
+    // Insert user message into conversations table
+    const userResult = db.prepare(`
       INSERT INTO conversations (project_id, role, content)
       VALUES (?, ?, ?)
     `).run(project.id, role, content);
 
-    const message = db.prepare('SELECT * FROM conversations WHERE id = ?')
-      .get(result.lastInsertRowid);
+    const userMessage = db.prepare('SELECT * FROM conversations WHERE id = ?')
+      .get(userResult.lastInsertRowid);
 
-    return reply.status(201).send({ message });
+    // If ai flag is set, get AI response
+    if (ai && role === 'user') {
+      try {
+        const { response, engine } = await getAIResponse(content);
+
+        // Store AI response
+        const aiResult = db.prepare(`
+          INSERT INTO conversations (project_id, role, content)
+          VALUES (?, ?, ?)
+        `).run(project.id, 'assistant', response);
+
+        const aiResponse = db.prepare('SELECT * FROM conversations WHERE id = ?')
+          .get(aiResult.lastInsertRowid);
+
+        return reply.status(201).send({
+          userMessage,
+          aiResponse,
+          engine
+        });
+      } catch (error) {
+        // Return user message but with AI error
+        return reply.status(201).send({
+          userMessage,
+          aiError: error.message
+        });
+      }
+    }
+
+    // No AI requested, just return the message
+    return reply.status(201).send({ message: userMessage });
   });
 
   // NWHA-016: Retrieve conversation history
