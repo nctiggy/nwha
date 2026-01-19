@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  lint-and-test:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+        env:
+          NODE_ENV: test
+
+      - name: Integration tests
+        run: npm run test:integration
+        env:
+          NODE_ENV: test
+          SESSION_SECRET: ci-test-secret-32chars-minimum
+          AUTH_BYPASS: 'true'
+
+  docker-build-test:
+    name: Docker Build & E2E Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Create test .env
+        run: |
+          cat > .env << EOF
+          NODE_ENV=test
+          PORT=3000
+          SESSION_SECRET=ci-test-secret-32chars-minimum
+          AUTH_BYPASS=true
+          GITHUB_CLIENT_ID=test
+          GITHUB_CLIENT_SECRET=test
+          GITHUB_CALLBACK_URL=http://localhost:3000/auth/github/callback
+          EOF
+
+      - name: Create mock Claude credentials
+        run: |
+          mkdir -p ~/.claude
+          echo '{}' > ~/.claude/.credentials.json
+
+      - name: Build image
+        run: docker compose build
+
+      - name: Start container
+        run: docker compose up -d
+
+      - name: Wait for container
+        run: |
+          echo "Waiting for container to be healthy..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:3000/health > /dev/null 2>&1; then
+              echo "Container is healthy!"
+              break
+            fi
+            echo "Attempt $i/30 - waiting..."
+            sleep 2
+          done
+
+      - name: Health check
+        run: curl -f http://localhost:3000/health
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs nwha
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npm run test:e2e
+        env:
+          BASE_URL: http://localhost:3000
+          AUTH_BYPASS: 'true'
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Stop container
+        if: always()
+        run: docker compose down
+
+  push-main:
+    name: Push to Docker Hub (main)
+    runs-on: ubuntu-latest
+    needs: [docker-build-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/nwha:main
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

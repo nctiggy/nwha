@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.*
+data/
+*.db*
+projects/
+logs/
+*.log
+public/css/styles.css
+.DS_Store
+.vscode/
+.idea/
+coverage/
+playwright-report/
+test-results/

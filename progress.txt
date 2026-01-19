@@ -1,0 +1,65 @@
+# NWHA Development Progress Log
+# Append-only - NEVER replace content, always append
+
+================================================================================
+Session Started: 2025-01-18
+================================================================================
+
+## Initial Setup Complete
+- Flattened project structure (moved from nested nwha/nwha)
+- Updated .env.example with all required configuration
+- Fixed docker-compose.yml to use named volumes (avoids bind mount issues)
+- Fixed Dockerfile to not install claude-code/codex globally (use API instead)
+- Created preflight.sh for setup validation
+- Added @anthropic-ai/sdk to dependencies
+- Created prd.json with 12 user stories
+- Updated PROMPT.md with proper Ralph loop instructions
+
+## Known Issues Fixed
+- Docker volume mounts: Changed from bind mounts to named volumes for data/projects
+- Claude credentials: Now mount only .credentials.json file, not entire directory
+- Auth: Added AUTH_BYPASS env var for testing mode
+- Iteration limit: Set to 20 (RALPH_MAX_ITERATIONS)
+
+## Learnings
+- snarktank/ralph uses prd.json with passes: true/false for story tracking
+- progress.txt is append-only for continuity across iterations
+- AGENTS.md captures reusable patterns
+- Tests must FAIL first (TDD) before implementation
+- Never work around problems - fix the root cause
+
+================================================================================
+
+## CLI Tools Configuration (Subscription-based, NO API)
+- Changed from API (@anthropic-ai/sdk) to CLI tools (subscription-based)
+- Primary: Claude CLI (`claude --dangerously-skip-permissions`)
+- Fallback: Codex CLI (`codex`) - when Claude credits exhausted
+- Removed @anthropic-ai/sdk from package.json
+- Removed ANTHROPIC_API_KEY from .env.example
+- Added CLI_PRIMARY and CLI_FALLBACK_ENABLED to .env
+- Updated Dockerfile to install CLI tools globally
+- Mount both ~/.claude and ~/.codex directories in docker-compose.yml
+- Updated preflight.sh to check for both CLI credentials
+
+## Key CLI Commands
+- Claude: `claude --dangerously-skip-permissions -p "prompt"`
+- Codex: `codex -p "prompt"`
+
+================================================================================
+
+## PRD Revision - Properly Scoped Stories (Ralph Pattern)
+- Expanded from 12 monolithic stories to 35 atomic stories
+- Each story completable within single context window
+- Avoided large features like "add authentication" - split into smaller pieces
+- Added "Verify in browser" criteria for frontend stories (NWHA-028, 029, 030)
+- Fixed CLI references (was "Anthropic SDK", now "Claude CLI")
+- Stories ordered by dependency (server -> db -> auth -> api -> socket -> frontend -> docker -> ci)
+
+## Ralph PRD Guidelines Applied
+- Stories must be small enough for one context window
+- Acceptance criteria: 2-4 specific, verifiable conditions
+- Frontend stories require browser verification
+- Priority = execution order (1 = first)
+- passes: false until all criteria met
+
+================================================================================

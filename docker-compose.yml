@@ -1,0 +1,43 @@
+services:
+  nwha:
+    build: .
+    container_name: nwha
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      # Auth
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL:-http://localhost:3000/auth/github/callback}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - AUTH_BYPASS=${AUTH_BYPASS:-false}
+      # Paths
+      - DATA_DIR=/app/data
+      - PROJECTS_DIR=/app/projects
+      # Ralph settings
+      - RALPH_MAX_ITERATIONS=${RALPH_MAX_ITERATIONS:-20}
+      - RALPH_ITERATION_COOLDOWN=${RALPH_ITERATION_COOLDOWN:-5}
+      # CLI tools (subscription-based, NO API)
+      - CLI_PRIMARY=${CLI_PRIMARY:-claude}
+      - CLI_FALLBACK_ENABLED=${CLI_FALLBACK_ENABLED:-true}
+    volumes:
+      # Named volumes for persistence (avoids bind mount issues)
+      - nwha-data:/app/data
+      - nwha-projects:/app/projects
+      # Claude CLI credentials
+      - ${HOME}/.claude:/home/node/.claude:ro
+      # Codex CLI credentials
+      - ${HOME}/.codex:/home/node/.codex:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  nwha-data:
+  nwha-projects:

@@ -1,0 +1,478 @@
+{
+  "project": "nwha",
+  "branchName": "main",
+  "description": "AI-powered autonomous development orchestrator using the Ralph pattern. Uses Claude CLI (primary) with Codex CLI fallback - subscription-based, NO API.",
+  "userStories": [
+    {
+      "id": "NWHA-001",
+      "title": "Fastify server starts and listens",
+      "description": "As a developer, I want the Fastify server to start and listen on the configured port",
+      "acceptanceCriteria": [
+        "Server starts without errors",
+        "Listens on PORT from environment (default 3000)",
+        "Logs startup message with port number"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Foundation - must work before anything else"
+    },
+    {
+      "id": "NWHA-002",
+      "title": "Health endpoint returns 200",
+      "description": "As a user, I want GET /health to return 200 so I can verify the server is running",
+      "acceptanceCriteria": [
+        "GET /health returns 200 status",
+        "Response body is { status: 'ok', timestamp: '<ISO date>' }",
+        "Response time < 100ms"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Required for Docker healthcheck"
+    },
+    {
+      "id": "NWHA-003",
+      "title": "SQLite database connection",
+      "description": "As a developer, I want the app to connect to SQLite on startup",
+      "acceptanceCriteria": [
+        "better-sqlite3 connects to DATA_DIR/nwha.db",
+        "Database file created if not exists",
+        "Connection exported as singleton"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-004",
+      "title": "Database schema initialization",
+      "description": "As a developer, I want the database schema created on startup",
+      "acceptanceCriteria": [
+        "users table created with id, github_id, username, email, role",
+        "projects table created with foreign key to users",
+        "conversations table created with foreign key to projects",
+        "Schema applied idempotently (safe to run multiple times)"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-005",
+      "title": "Sessions and tasks tables",
+      "description": "As a developer, I want sessions and tasks tables for Ralph tracking",
+      "acceptanceCriteria": [
+        "sessions table created with project_id, engine, status, pid, iterations",
+        "tasks table created with project_id, title, status, phase, order_num",
+        "knowledge table created with category, problem, solution, context, tags",
+        "FTS virtual table for knowledge search"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-006",
+      "title": "Session middleware setup",
+      "description": "As a developer, I want session middleware configured for auth",
+      "acceptanceCriteria": [
+        "@fastify/session configured with SESSION_SECRET",
+        "@fastify/cookie configured",
+        "Session persists across requests",
+        "Session stored in SQLite"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-007",
+      "title": "Auth bypass for testing",
+      "description": "As a developer, I want to bypass auth in test mode",
+      "acceptanceCriteria": [
+        "When AUTH_BYPASS=true, POST /auth/dev-login creates session",
+        "Mock user: { id: 1, username: 'test-user', github_id: 'test-123' }",
+        "When AUTH_BYPASS=false (default), endpoint returns 404"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Must work before GitHub OAuth for testing"
+    },
+    {
+      "id": "NWHA-008",
+      "title": "GitHub OAuth - redirect to GitHub",
+      "description": "As a user, I want GET /auth/github to redirect to GitHub for login",
+      "acceptanceCriteria": [
+        "passport-github2 strategy configured",
+        "GET /auth/github redirects to GitHub OAuth",
+        "Redirect includes correct client_id and callback_url"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-009",
+      "title": "GitHub OAuth - callback handler",
+      "description": "As a user, I want the OAuth callback to create my session",
+      "acceptanceCriteria": [
+        "GET /auth/github/callback handles OAuth response",
+        "User created/updated in database with GitHub profile",
+        "Session established with user data",
+        "Redirects to / on success"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-010",
+      "title": "Auth status endpoint",
+      "description": "As a user, I want to check my auth status",
+      "acceptanceCriteria": [
+        "GET /auth/me returns current user when authenticated",
+        "GET /auth/me returns 401 when not authenticated",
+        "GET /auth/logout destroys session and redirects to /"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-011",
+      "title": "Auth middleware for protected routes",
+      "description": "As a developer, I want middleware to protect API routes",
+      "acceptanceCriteria": [
+        "requireAuth middleware checks session",
+        "Returns 401 if no session",
+        "Passes user to request if authenticated"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-012",
+      "title": "Create project endpoint",
+      "description": "As a user, I want to create a new project",
+      "acceptanceCriteria": [
+        "POST /api/projects creates project with name",
+        "Slug auto-generated from name",
+        "Project associated with authenticated user",
+        "Returns created project with id and slug"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-013",
+      "title": "List and get projects",
+      "description": "As a user, I want to list and view my projects",
+      "acceptanceCriteria": [
+        "GET /api/projects returns user's projects only",
+        "GET /api/projects/:slug returns single project",
+        "Returns 404 if project not found or not owned"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-014",
+      "title": "Update and delete projects",
+      "description": "As a user, I want to update and delete my projects",
+      "acceptanceCriteria": [
+        "PUT /api/projects/:slug updates project name/status",
+        "DELETE /api/projects/:slug soft-deletes project",
+        "Returns 404 if not found or not owned"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-015",
+      "title": "Store conversation messages",
+      "description": "As a user, I want my chat messages stored",
+      "acceptanceCriteria": [
+        "POST /api/projects/:slug/chat stores message",
+        "Message has role (user/assistant) and content",
+        "Message associated with project"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-016",
+      "title": "Retrieve conversation history",
+      "description": "As a user, I want to see my chat history",
+      "acceptanceCriteria": [
+        "GET /api/projects/:slug/chat returns messages",
+        "Messages ordered by created_at",
+        "Only returns messages for owned project"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-017",
+      "title": "AI response via Claude CLI",
+      "description": "As a user, I want AI responses generated via Claude CLI",
+      "acceptanceCriteria": [
+        "POST /api/projects/:slug/chat triggers Claude CLI",
+        "Claude called with: claude --dangerously-skip-permissions -p '<prompt>'",
+        "Response stored as assistant message",
+        "Returns both user message and AI response"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "Uses CLI subscription, NOT API"
+    },
+    {
+      "id": "NWHA-018",
+      "title": "Codex CLI fallback",
+      "description": "As a user, I want Codex used when Claude fails",
+      "acceptanceCriteria": [
+        "If Claude returns error/rate limit, try Codex",
+        "Codex called with: codex -p '<prompt>'",
+        "Fallback logged to progress.txt",
+        "CLI_FALLBACK_ENABLED=false disables fallback"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "Codex is fallback, smaller subscription"
+    },
+    {
+      "id": "NWHA-019",
+      "title": "Socket.io server setup",
+      "description": "As a developer, I want Socket.io configured on the server",
+      "acceptanceCriteria": [
+        "Socket.io attached to Fastify server",
+        "Shares same port as HTTP (3000)",
+        "CORS configured to allow connections"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-020",
+      "title": "Socket authentication",
+      "description": "As a developer, I want socket connections authenticated",
+      "acceptanceCriteria": [
+        "Socket middleware checks session cookie",
+        "Unauthenticated sockets disconnected",
+        "User data attached to socket"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-021",
+      "title": "PTY process spawn",
+      "description": "As a developer, I want to spawn PTY processes for terminal",
+      "acceptanceCriteria": [
+        "node-pty spawns bash shell",
+        "PTY associated with session ID",
+        "PTY cleaned up on disconnect"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-022",
+      "title": "Terminal socket events",
+      "description": "As a user, I want to interact with terminal via WebSocket",
+      "acceptanceCriteria": [
+        "terminal:attach connects client to PTY",
+        "terminal:input sends data to PTY stdin",
+        "terminal:output streams PTY stdout to client"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-023",
+      "title": "Start Ralph session",
+      "description": "As a user, I want to start a Ralph development session",
+      "acceptanceCriteria": [
+        "POST /api/projects/:slug/sessions creates session",
+        "Spawns PTY running Claude CLI in loop",
+        "Session tracked with status: running",
+        "Returns session ID"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-024",
+      "title": "Ralph session control",
+      "description": "As a user, I want to pause/resume/stop Ralph sessions",
+      "acceptanceCriteria": [
+        "POST /api/sessions/:id/pause sends SIGSTOP",
+        "POST /api/sessions/:id/resume sends SIGCONT",
+        "POST /api/sessions/:id/stop sends SIGTERM",
+        "Session status updated accordingly"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-025",
+      "title": "Ralph iteration limit",
+      "description": "As a user, I want Ralph to stop after max iterations",
+      "acceptanceCriteria": [
+        "Session tracks iteration count",
+        "Stops when RALPH_MAX_ITERATIONS reached",
+        "Status set to 'max_iterations_reached'",
+        "Notifies via socket event"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": "Default 20 iterations"
+    },
+    {
+      "id": "NWHA-026",
+      "title": "Static file serving",
+      "description": "As a user, I want static files served from /public",
+      "acceptanceCriteria": [
+        "@fastify/static configured for /public",
+        "GET / serves index.html",
+        "CSS and JS files accessible"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-027",
+      "title": "Tailwind CSS build",
+      "description": "As a developer, I want Tailwind CSS compiled",
+      "acceptanceCriteria": [
+        "npm run build:css compiles Tailwind",
+        "Output to public/css/styles.css",
+        "Minified in production"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-028",
+      "title": "Basic HTML layout",
+      "description": "As a user, I want a basic page layout",
+      "acceptanceCriteria": [
+        "index.html has header, sidebar, main content areas",
+        "Tailwind classes for styling",
+        "Verify in browser: layout renders correctly"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-029",
+      "title": "xterm.js terminal component",
+      "description": "As a user, I want a terminal in the browser",
+      "acceptanceCriteria": [
+        "xterm.js loaded and initialized",
+        "Terminal renders in designated container",
+        "Connects to Socket.io on load",
+        "Verify in browser: terminal displays and accepts input"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-030",
+      "title": "htmx dynamic updates",
+      "description": "As a user, I want the UI to update without full page reloads",
+      "acceptanceCriteria": [
+        "htmx loaded in page",
+        "Project list loads via htmx",
+        "Chat messages update via htmx",
+        "Verify in browser: interactions work without reload"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-031",
+      "title": "Docker image builds",
+      "description": "As a developer, I want the Docker image to build successfully",
+      "acceptanceCriteria": [
+        "docker compose build completes without errors",
+        "Image includes Claude CLI and Codex CLI",
+        "Image size reasonable (< 1GB)"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-032",
+      "title": "Docker container starts",
+      "description": "As a user, I want the container to start and be healthy",
+      "acceptanceCriteria": [
+        "docker compose up -d starts container",
+        "Health check passes within 30 seconds",
+        "Container logs show no errors",
+        "curl localhost:3000/health returns 200"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-033",
+      "title": "CLI credentials mounted",
+      "description": "As a developer, I want CLI credentials accessible in container",
+      "acceptanceCriteria": [
+        "~/.claude mounted to /home/node/.claude",
+        "~/.codex mounted to /home/node/.codex",
+        "claude command works inside container",
+        "codex command works inside container"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-034",
+      "title": "GitHub Actions CI on PR",
+      "description": "As a developer, I want CI to run on pull requests",
+      "acceptanceCriteria": [
+        "Workflow triggers on PR to main",
+        "Runs lint, unit tests, integration tests",
+        "Builds Docker image",
+        "Runs E2E tests against container"
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "NWHA-035",
+      "title": "Release workflow on tag",
+      "description": "As a developer, I want releases to push to Docker Hub",
+      "acceptanceCriteria": [
+        "Workflow triggers on v*.*.* tags",
+        "Runs full test suite before build",
+        "Builds multi-arch image (amd64, arm64)",
+        "Pushes to Docker Hub with version and latest tags"
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

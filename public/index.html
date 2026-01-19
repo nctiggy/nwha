@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NWHA - Never Work Hard Again</title>
+  <link href="/css/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-4">NWHA</h1>
+    <p class="text-gray-400">Never Work Hard Again - AI-powered autonomous development</p>
+
+    <div class="mt-8 p-4 bg-gray-800 rounded">
+      <h2 class="text-xl mb-2">Status</h2>
+      <p id="status">Checking...</p>
+    </div>
+  </div>
+
+  <script>
+    fetch('/health')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('status').textContent =
+          `Server: ${data.status} | Time: ${data.timestamp}`;
+      })
+      .catch(err => {
+        document.getElementById('status').textContent = 'Error: ' + err.message;
+      });
+  </script>
+</body>
+</html>
