@@ -49,3 +49,60 @@ export function closeDb() {
 export function getDbPath() {
   return DB_PATH;
 }
+
+/**
+ * Initialize database schema
+ * Creates tables if they don't exist (idempotent)
+ */
+export function initSchema() {
+  const db = getDb();
+
+  // Enable foreign keys
+  db.pragma('foreign_keys = ON');
+
+  // Users table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      github_id TEXT UNIQUE NOT NULL,
+      username TEXT NOT NULL,
+      email TEXT,
+      role TEXT DEFAULT 'user',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Projects table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      status TEXT DEFAULT 'active',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Conversations (chat messages) table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create indexes for better query performance
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
+    CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);
+    CREATE INDEX IF NOT EXISTS idx_conversations_project_id ON conversations(project_id);
+  `);
+}

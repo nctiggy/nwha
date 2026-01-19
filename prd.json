@@ -53,7 +53,7 @@
         "Schema applied idempotently (safe to run multiple times)"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
