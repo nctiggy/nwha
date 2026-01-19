@@ -109,3 +109,26 @@ Session Started: 2025-01-18
 ### Docker: Build and health check verified
 
 ================================================================================
+
+## Session: 2026-01-18 (continued) - NWHA-008 through NWHA-014 Complete
+
+### Completed Stories
+- NWHA-008: GitHub OAuth redirect ✓
+- NWHA-009: GitHub OAuth callback ✓
+- NWHA-010: Auth status endpoint ✓
+- NWHA-011: Auth middleware ✓
+- NWHA-012: Create project endpoint ✓
+- NWHA-013: List and get projects ✓
+- NWHA-014: Update and delete projects ✓
+
+### Key Implementation Details
+- Created src/routes/auth.js with GitHub OAuth flow
+- Created src/routes/api.js with protected API routes
+- Auth middleware on /api/* routes returns 401 if not authenticated
+- Mock user created in database for AUTH_BYPASS mode
+- Projects CRUD: POST/GET/PUT/DELETE on /api/projects
+
+### Test Count: 40 passing tests
+### Docker: Build and health check verified
+
+================================================================================

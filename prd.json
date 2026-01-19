@@ -200,7 +200,7 @@
         "Message associated with project"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -213,7 +213,7 @@
         "Only returns messages for owned project"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

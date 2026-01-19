@@ -147,4 +147,63 @@ export async function registerApiRoutes(fastify) {
 
     return { deleted: true };
   });
+
+  // NWHA-015: Store conversation message
+  fastify.post('/api/projects/:slug/chat', async (request, reply) => {
+    const { slug } = request.params;
+    const { role, content } = request.body || {};
+    const db = getDb();
+
+    // Verify project exists and belongs to user
+    const project = db.prepare('SELECT * FROM projects WHERE slug = ? AND user_id = ?')
+      .get(slug, request.user.id);
+
+    if (!project) {
+      return reply.status(404).send({ error: 'Project not found' });
+    }
+
+    // Validate required fields
+    if (!role || !content) {
+      return reply.status(400).send({ error: 'Role and content are required' });
+    }
+
+    // Validate role
+    if (!['user', 'assistant'].includes(role)) {
+      return reply.status(400).send({ error: 'Role must be user or assistant' });
+    }
+
+    // Insert message into conversations table
+    const result = db.prepare(`
+      INSERT INTO conversations (project_id, role, content)
+      VALUES (?, ?, ?)
+    `).run(project.id, role, content);
+
+    const message = db.prepare('SELECT * FROM conversations WHERE id = ?')
+      .get(result.lastInsertRowid);
+
+    return reply.status(201).send({ message });
+  });
+
+  // NWHA-016: Retrieve conversation history
+  fastify.get('/api/projects/:slug/chat', async (request, reply) => {
+    const { slug } = request.params;
+    const db = getDb();
+
+    // Verify project exists and belongs to user
+    const project = db.prepare('SELECT * FROM projects WHERE slug = ? AND user_id = ?')
+      .get(slug, request.user.id);
+
+    if (!project) {
+      return reply.status(404).send({ error: 'Project not found' });
+    }
+
+    // Get messages ordered by created_at
+    const messages = db.prepare(`
+      SELECT * FROM conversations
+      WHERE project_id = ?
+      ORDER BY created_at ASC
+    `).all(project.id);
+
+    return { messages };
+  });
 }
