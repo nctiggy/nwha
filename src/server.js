@@ -11,6 +11,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'default-dev-secret-change-in-production';
+const AUTH_BYPASS = process.env.AUTH_BYPASS === 'true';
+
+// Mock user for testing when AUTH_BYPASS=true
+const MOCK_USER = {
+  id: 1,
+  username: 'test-user',
+  github_id: 'test-123',
+  email: 'test@example.com',
+  role: 'user'
+};
 
 export async function createServer() {
   const fastify = Fastify({
@@ -60,6 +70,15 @@ export async function createServer() {
     const timestamp = request.session.get('timestamp');
     return { visited, timestamp };
   });
+
+  // Auth bypass for testing (NWHA-007)
+  if (AUTH_BYPASS) {
+    fastify.post('/auth/dev-login', async (request, reply) => {
+      // Set user in session
+      request.session.set('user', MOCK_USER);
+      return { user: MOCK_USER };
+    });
+  }
 
   return fastify;
 }

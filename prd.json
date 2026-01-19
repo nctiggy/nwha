@@ -94,7 +94,7 @@
         "When AUTH_BYPASS=false (default), endpoint returns 404"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Must work before GitHub OAuth for testing"
     },
     {
