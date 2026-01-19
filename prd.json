@@ -241,7 +241,7 @@
         "CLI_FALLBACK_ENABLED=false disables fallback"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": "Codex is fallback, smaller subscription"
     },
     {

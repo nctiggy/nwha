@@ -151,3 +151,21 @@ describe('AI Chat (NWHA-017, NWHA-018)', () => {
     });
   });
 });
+
+// Separate describe for CLI service tests
+describe('CLI Service (NWHA-017, NWHA-018)', () => {
+  it('should have getAIResponse function', async () => {
+    const { getAIResponse } = await import('../../src/services/cli.js');
+    expect(typeof getAIResponse).toBe('function');
+  });
+
+  it('should have runClaude function', async () => {
+    const { runClaude } = await import('../../src/services/cli.js');
+    expect(typeof runClaude).toBe('function');
+  });
+
+  it('should have runCodex function', async () => {
+    const { runCodex } = await import('../../src/services/cli.js');
+    expect(typeof runCodex).toBe('function');
+  });
+});
