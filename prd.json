@@ -13,7 +13,7 @@
         "Logs startup message with port number"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Foundation - must work before anything else"
     },
     {
@@ -26,7 +26,7 @@
         "Response time < 100ms"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Required for Docker healthcheck"
     },
     {

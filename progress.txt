@@ -63,3 +63,18 @@ Session Started: 2025-01-18
 - passes: false until all criteria met
 
 ================================================================================
+
+## Session: 2026-01-18 - NWHA-001 & NWHA-002 Complete
+- Added tests/unit/server.test.js for NWHA-001 (server startup)
+- Verified all unit tests pass (5 tests: 3 server + 2 health)
+- Docker build succeeds (< 10s with cache)
+- Docker container starts and /health returns 200
+- Container logs show no errors
+
+### Completed Stories
+- NWHA-001: Fastify server starts and listens ✓
+- NWHA-002: Health endpoint returns 200 ✓
+
+### Next Story: NWHA-003 (SQLite database connection)
+
+================================================================================
