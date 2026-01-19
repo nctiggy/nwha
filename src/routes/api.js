@@ -1,6 +1,10 @@
 // API routes for NWHA
 import { getDb, initSchema } from '../db/index.js';
 import { getAIResponse } from '../services/cli.js';
+import { PTYManager } from '../services/pty.js';
+
+// Global PTY manager for Ralph sessions
+const ptyManager = new PTYManager();
 
 /**
  * Auth middleware - ensures user is authenticated
@@ -236,5 +240,105 @@ export async function registerApiRoutes(fastify) {
     `).all(project.id);
 
     return { messages };
+  });
+
+  // NWHA-023: Start Ralph session
+  fastify.post('/api/projects/:slug/sessions', async (request, reply) => {
+    const { slug } = request.params;
+    const db = getDb();
+
+    // Verify project exists and belongs to user
+    const project = db.prepare('SELECT * FROM projects WHERE slug = ? AND user_id = ?')
+      .get(slug, request.user.id);
+
+    if (!project) {
+      return reply.status(404).send({ error: 'Project not found' });
+    }
+
+    // Create session record in database
+    const result = db.prepare(`
+      INSERT INTO sessions (project_id, engine, status, iterations)
+      VALUES (?, ?, ?, ?)
+    `).run(project.id, 'claude', 'running', 0);
+
+    const sessionId = result.lastInsertRowid;
+
+    // Create PTY for the session
+    ptyManager.create(`session-${sessionId}`, {
+      cwd: process.env.PROJECTS_DIR || '/app/projects'
+    });
+
+    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId);
+
+    return reply.status(201).send({ session });
+  });
+
+  // NWHA-024: Pause session
+  fastify.post('/api/sessions/:id/pause', async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id);
+
+    if (!session) {
+      return reply.status(404).send({ error: 'Session not found' });
+    }
+
+    // Update session status
+    db.prepare(`
+      UPDATE sessions SET status = 'paused'
+      WHERE id = ?
+    `).run(id);
+
+    const updated = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id);
+
+    return reply.status(200).send({ session: updated });
+  });
+
+  // NWHA-024: Resume session
+  fastify.post('/api/sessions/:id/resume', async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id);
+
+    if (!session) {
+      return reply.status(404).send({ error: 'Session not found' });
+    }
+
+    // Update session status
+    db.prepare(`
+      UPDATE sessions SET status = 'running'
+      WHERE id = ?
+    `).run(id);
+
+    const updated = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id);
+
+    return reply.status(200).send({ session: updated });
+  });
+
+  // NWHA-024: Stop session
+  fastify.post('/api/sessions/:id/stop', async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id);
+
+    if (!session) {
+      return reply.status(404).send({ error: 'Session not found' });
+    }
+
+    // Destroy PTY
+    ptyManager.destroy(`session-${id}`);
+
+    // Update session status and set ended_at
+    db.prepare(`
+      UPDATE sessions SET status = 'stopped', ended_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(id);
+
+    const updated = db.prepare('SELECT * FROM sessions WHERE id = ?').get(id);
+
+    return reply.status(200).send({ session: updated });
   });
 }

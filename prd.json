@@ -307,7 +307,7 @@
         "Returns session ID"
       ],
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -321,7 +321,7 @@
         "Session status updated accordingly"
       ],
       "priority": 24,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
