@@ -39,7 +39,7 @@
         "Connection exported as singleton"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
