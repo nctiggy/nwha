@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCookie from '@fastify/cookie';
 import fastifySession from '@fastify/session';
+import { Server as SocketIO } from 'socket.io';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { SQLiteStore } from './session-store.js';
@@ -99,6 +100,65 @@ export async function createServer() {
 
   // Register API routes (NWHA-011, NWHA-012, NWHA-013)
   await registerApiRoutes(fastify);
+
+  // Socket.io setup (NWHA-019)
+  fastify.addHook('onReady', async () => {
+    const io = new SocketIO(fastify.server, {
+      cors: {
+        origin: process.env.CORS_ORIGIN || '*',
+        methods: ['GET', 'POST'],
+        credentials: true
+      }
+    });
+
+    // Socket authentication middleware (NWHA-020)
+    io.use((socket, next) => {
+      // Parse session cookie from handshake headers
+      const cookieHeader = socket.handshake.headers.cookie;
+      if (!cookieHeader) {
+        return next(new Error('Authentication required - no session cookie'));
+      }
+
+      // Parse the session cookie
+      const cookies = {};
+      cookieHeader.split(';').forEach(cookie => {
+        const [name, value] = cookie.trim().split('=');
+        cookies[name] = value;
+      });
+
+      const sessionId = cookies['sessionId'];
+      if (!sessionId) {
+        return next(new Error('Authentication required - no session'));
+      }
+
+      // Verify session in store
+      const sessionStore = new SQLiteStore();
+      sessionStore.get(sessionId, (err, session) => {
+        if (err || !session || !session.user) {
+          return next(new Error('Authentication required - invalid session'));
+        }
+
+        // Attach user to socket
+        socket.user = session.user;
+        next();
+      });
+    });
+
+    // Handle socket connections
+    io.on('connection', (socket) => {
+      fastify.log.info(`Socket connected: ${socket.id} (user: ${socket.user?.username})`);
+
+      socket.on('disconnect', (reason) => {
+        fastify.log.info(`Socket disconnected: ${socket.id} (${reason})`);
+      });
+    });
+
+    // Attach io to fastify for access in routes
+    fastify.io = io;
+  });
+
+  // Also expose io via decorate for immediate access after ready
+  fastify.decorate('io', null);
 
   return fastify;
 }

@@ -254,7 +254,7 @@
         "CORS configured to allow connections"
       ],
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -267,7 +267,7 @@
         "User data attached to socket"
       ],
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
