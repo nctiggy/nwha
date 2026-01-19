@@ -5,27 +5,154 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NWHA - Never Work Hard Again</title>
   <link href="/css/styles.css" rel="stylesheet">
+  <!-- xterm.js for terminal (NWHA-029) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
-  <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-4">NWHA</h1>
-    <p class="text-gray-400">Never Work Hard Again - AI-powered autonomous development</p>
-
-    <div class="mt-8 p-4 bg-gray-800 rounded">
-      <h2 class="text-xl mb-2">Status</h2>
-      <p id="status">Checking...</p>
+  <!-- Header (NWHA-028) -->
+  <header class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <h1 class="text-xl font-bold text-white">NWHA</h1>
+      <span class="text-gray-500 text-sm">Never Work Hard Again</span>
     </div>
+    <div class="flex items-center gap-4">
+      <span id="status" class="text-xs text-gray-400">Connecting...</span>
+      <div id="user-info" class="text-sm"></div>
+    </div>
+  </header>
+
+  <div class="flex h-[calc(100vh-56px)]">
+    <!-- Sidebar (NWHA-028) -->
+    <aside class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+      <div class="p-4 border-b border-gray-700">
+        <h2 class="font-semibold text-gray-300 mb-2">Projects</h2>
+        <button
+          id="new-project-btn"
+          class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+          hx-get="/partials/new-project"
+          hx-target="#project-list"
+          hx-swap="afterbegin"
+        >
+          + New Project
+        </button>
+      </div>
+      <div id="project-list" class="flex-1 overflow-auto p-2" hx-get="/api/projects" hx-trigger="load" hx-swap="innerHTML">
+        <!-- Projects loaded via htmx (NWHA-030) -->
+      </div>
+    </aside>
+
+    <!-- Main Content (NWHA-028) -->
+    <main class="flex-1 flex flex-col">
+      <!-- Chat Area -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <div id="chat-container" class="flex-1 overflow-auto p-4 space-y-4">
+          <div class="text-center text-gray-500 py-8">
+            Select a project to start chatting
+          </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="border-t border-gray-700 p-4">
+          <form id="chat-form" class="flex gap-2">
+            <input
+              type="text"
+              id="chat-input"
+              placeholder="Type a message..."
+              class="flex-1 bg-gray-800 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-blue-500"
+              disabled
+            >
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled
+            >
+              Send
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Terminal Container (NWHA-029) -->
+      <div id="terminal-container" class="h-64 border-t border-gray-700 bg-black">
+        <div id="terminal" class="h-full"></div>
+      </div>
+    </main>
   </div>
 
+  <!-- htmx for dynamic updates (NWHA-030) -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <!-- xterm.js (NWHA-029) -->
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+  <!-- Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+
   <script>
+    // Initialize terminal (NWHA-029)
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: 14,
+      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      theme: {
+        background: '#000000',
+        foreground: '#ffffff',
+        cursor: '#ffffff'
+      }
+    });
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal'));
+    fitAddon.fit();
+
+    // Handle window resize
+    window.addEventListener('resize', () => fitAddon.fit());
+
+    // Socket.io connection
+    let socket = null;
+    try {
+      socket = io({ transports: ['websocket'] });
+
+      socket.on('connect', () => {
+        document.getElementById('status').textContent = 'Connected';
+        document.getElementById('status').classList.remove('text-red-400');
+        document.getElementById('status').classList.add('text-green-400');
+      });
+
+      socket.on('connect_error', (err) => {
+        document.getElementById('status').textContent = 'Auth required';
+        document.getElementById('status').classList.remove('text-green-400');
+        document.getElementById('status').classList.add('text-red-400');
+      });
+
+      socket.on('disconnect', () => {
+        document.getElementById('status').textContent = 'Disconnected';
+        document.getElementById('status').classList.remove('text-green-400');
+        document.getElementById('status').classList.add('text-red-400');
+      });
+
+      // Terminal output
+      socket.on('terminal:output', (data) => {
+        term.write(data);
+      });
+    } catch (e) {
+      console.error('Socket.io not available:', e);
+    }
+
+    // Terminal input
+    term.onData((data) => {
+      if (socket && socket.connected) {
+        socket.emit('terminal:input', data);
+      }
+    });
+
+    // Health check
     fetch('/health')
       .then(r => r.json())
       .then(data => {
-        document.getElementById('status').textContent =
-          `Server: ${data.status} | Time: ${data.timestamp}`;
+        console.log('Server healthy:', data);
       })
       .catch(err => {
-        document.getElementById('status').textContent = 'Error: ' + err.message;
+        console.error('Health check failed:', err);
       });
   </script>
 </body>

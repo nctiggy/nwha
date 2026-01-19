@@ -361,7 +361,7 @@
         "Minified in production"
       ],
       "priority": 27,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -374,7 +374,7 @@
         "Verify in browser: layout renders correctly"
       ],
       "priority": 28,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -388,7 +388,7 @@
         "Verify in browser: terminal displays and accepts input"
       ],
       "priority": 29,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -402,7 +402,7 @@
         "Verify in browser: interactions work without reload"
       ],
       "priority": 30,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
